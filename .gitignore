@@ -30,5 +30,9 @@ jsconfig.json
 
 # text
 token.txt
+PiPiLog.txt
+
+# Some test stuf
+json_mess_around.py
 
 # End of https://www.gitignore.io/api/text,code,pycharm,database
