@@ -1,7 +1,26 @@
-import discord
+# Internal
 import asyncio
 
+# External
+import discord
+from wit import Wit
+
+
+# Getting API tokens
+with open("token.txt") as file:
+    file_read = file.readlines()
+    token_discord = file_read[0].split()
+    token_discord = token_discord[1]
+
+    token_wit = file_read[1].split()
+    token_wit = token_wit[1]
+
+
 client = discord.Client()
+
+# Setting up WIT
+# client = Wit(token_wit)
+
 
 @client.event
 async def on_ready():
@@ -18,41 +37,29 @@ async def on_message(message):
         async for log in client.logs_from(message.channel, limit=100):
             if log.author == message.author:
                 counter += 1
-
         await client.edit_message(tmp, 'You have {} messages.'.format(counter))
     elif message.content.startswith('!sleep'):
         await asyncio.sleep(5)
         await client.send_message(message.channel, 'Done sleeping')
     elif message.content.startswith('!todo'):
-        object = todo
-
-class todo(object):
-    """
-    A todo list object. Will control the todolist. put in a class for neatness
-
-    attributes(?)
-
-    view_entries = reads all entries from SQL database
-
-    add_entry = adds a new todo to the database
-
-    delete entry = deletes entries 
-
-    """
-
-    import sqlite3
-
-    db = sqlite3.connect("todo.db")
-    c = db.cursor
-
-    def __init__(self):
-        db.create_tables([ToDo])
+        ToDo()
 
 
-with open("token.txt") as token
-token = token.read()
+# learn classes
+# Learn SQLlite
 
-client.run('')
+#############################################################################################################
+# ToDo #
+def ToDo():
+    import sqlite3    
+    con = sqlite3.connect('todo.db') # Warning: This file is created in the current directory
+    con.execute("CREATE TABLE todo (id INTEGER PRIMARY KEY, task char(250) NOT NULL, date TEXT, reminder_date TEXT)")
+    return con
+
+def ToDo_add(message, con):
+    con.execute("")
+    con.commit()
 
 
-def good_morning(message):
+
+client.run(token_discord)
