@@ -57,7 +57,9 @@ def ToDo():
     return con
 
 def ToDo_add(message, con):
-    con.execute("")
+    from random import randint
+    con.execute("""INSERT INTO ToDo(id, task, date, reminder_date)
+    VALUES(?, ?, ?, ?)""", (id, task, (import datetime; datetime.datetime.now), reminder_date))
     con.commit()
 
 
