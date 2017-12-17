@@ -6,7 +6,6 @@ import datetime
 import time
 
 # External
-import discord
 from wit import Wit
 
 logging.basicConfig(filename='PiPiLog.txt', level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
@@ -21,56 +20,45 @@ with open("token.txt") as file:
     token_wit = token_wit[1]
 
 # Setting up clients
-client = discord.Client()
 client_wit = Wit(token_wit)
 
 logging.basicConfig(level=logging.INFO)
 
-@client.event
-async def on_ready():
-    print('Logged in as')
-    print(client.user.name)
-    print(client.user.id)
-    print('------')
+def main():
+    message = input("> ")
 
-@client.event
-async def on_message(message):
-    if message.content.startswith('!test'):
-        # test call
-        counter = 0
-        tmp = await client.send_message(message.channel, 'Calculating messages...')
-        async for log in client.logs_from(message.channel, limit=100):
-            if log.author == message.author:
-                counter += 1
-        await client.edit_message(tmp, 'You have {} messages.'.format(counter))
+    parse_data(message)
 
-    elif message.content.startswith('!pipi') or message.content.startswith('pipi'):
-        # responds to !pipi or pipi
-        data = client_wit.message(remove_pipi_msg(message.content))
-        if "reminder" in data["entities"]:
-            logging.info("In reminder")
-            # gets reminder details if "reminder" is found in feedback
-            try:
-                reminder_value = data["entities"]["reminder"][0]["value"]
-                reminder_confidence = data["entities"]["reminder"][0]["confidence"]
-            except KeyError:
-                logging.debug("#164 dictionary does not contain right items")
+def parse_data(message):
+    # use signal for this. Consider developing your own interpretations?
+    data = client_wit.message(message)
+    def parse_reminder(message):
+        logging.info("In reminder")
+        # gets reminder details if "reminder" is found in feedback
+        try:
+            reminder_value = data["entities"]["reminder"][0]["value"]
+            reminder_confidence = data["entities"]["reminder"][0]["confidence"]
+        except KeyError:
+            logging.debug("#164 dictionary does not contain right items")
         if "datetime" in data["entities"]:
-            logging.info("In datetime")
-            # gets datetime details if "datetime" is found in feedback
-            try:
-                datetime_value = data["entities"]["datetime"][0]["value"]
-                datetime_confidence = data["entities"]["datetime"][0]["confidence"] 
-            except KeyError:
-                logging.debug("#764 dictionary does not contain right items")
+            datetime_value = parse_datetime(message)
         else:
-            # reminders always need dates, so if one isn't then datetime set to current time + 24hrs
             datetime_value = get_date_tomorrow()
-        print(reminder_confidence)
-        if reminder_confidence > 0.9:
-            logging.info("Determind to be a reminder")
-            ToDo(reminder_value, datetime_value)
-    
+        return(reminder_value, reminder_confidence, datetime_value)
+
+    def parse_datetime(message):
+        logging.info("In datetime")
+        try:
+            datetime_value = data["entities"]["datetime"][0]["value"]
+            datetime_confidence = data["entities"]["datetime"][0]["confidence"] 
+        except KeyError:
+            logging.debug("#764 dictionary does not contain right items")
+
+        return(datetime_value, datetime_confidence)
+
+    if "reminder" in message
+
+
 def get_date_tomorrow():
     # can modify so you can choose own time
     from datetime import datetime, timedelta
@@ -121,4 +109,4 @@ def ToDo(reminder_value, datetime_value):
     return
 """
 
-client.run(token_discord)
+main()

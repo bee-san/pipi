@@ -34,5 +34,7 @@ PiPiLog.txt
 
 # Some test stuf
 json_mess_around.py
+todo.db
+
 
 # End of https://www.gitignore.io/api/text,code,pycharm,database
