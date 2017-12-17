@@ -4,37 +4,35 @@
 ###############################
 # ToDo
 ###############################
-    
+
 
 import sqlite3
-with sqlite3.connect('example.db') as db:
-        pass
+with sqlite3.connect('todo.db') as db:
+		pass
 
-class Databse_controller():
-    """
-    Class which handles database stuff. Objects are instantiated with table names
-    so one object per table. 
+class Database_controller():
+	"""
+	Class which handles database stuff. Objects are instantiated with table names
+	so one object per table.
 
-    *Values*
-    self.cursor = SQLite cursor
-    self.db = SQLite db
-    
-    """
-    def __init__(self, table_name):
-        self.cursor = db.cursor()
-        self.db = db
+	*Values*
+	self.cursor = SQLite cursor
+	self.db = SQLite db
+
+	"""
+	def __init__(self, table_name):
+		self.cursor = db.cursor()
+		self.db = db
 
 
 
-def ToDo_add(message, date, person, con):
-    # Adds new entry to todo table.
-    from datetime import datetime
-    from random import randint
+def ToDo_add(task, datetime1, con):
+	# Adds new entry to todo table.
+	from datetime import datetime
+	from random import randint
 
-    id = randint(0, 2500)
+	con.execute("""INSERT INTO todo(task, datetime, addedWhen) VALUES (?, ?, ?)""", (task, datetime1, (datetime.now())))
 
-    con.execute("""INSERT INTO ToDo(id, task, date, reminder_date)
-    VALUES(?, ?, ?, ?)""", (id, message, (datetime.now), date))
-    con.commit()
-    return
+
+	return
 
