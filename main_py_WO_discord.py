@@ -4,7 +4,7 @@ import json
 import logging
 import datetime
 import time
- 
+   
 # External
 from wit import Wit
 
