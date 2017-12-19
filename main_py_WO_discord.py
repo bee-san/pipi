@@ -1,8 +1,12 @@
-# Internal
+# Built into Python
 import logging
+import datetime
 
 # External
 from wit import Wit
+
+# Internal modules
+import database_handler
 
 logging.basicConfig(filename='PiPiLog.txt', level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 
@@ -20,15 +24,37 @@ client_wit = Wit(token_wit)
 
 logging.basicConfig(level=logging.INFO)
 
+debug_mode = False
+
+if debug_mode != True:
+	logging.disable(logging.CRITICAL) 
+
 def main():
 	while True:
-		message = input("> ")
-		parse_data(message)
+		try:
+			message = input("> ")
+			parse_data(message)
+		except Exception as e:
+			logging.info(e)
+			main()
 
 def parse_data(message):
 	# use signal for this. Consider developing your own interpretations?
 	data = client_wit.message(message)
 	logging.info(data)
+
+	def parse_command(message):
+		logging.info("in parse command")
+		logging.info(message)
+		import database_handler
+		print(message)
+		if "DEBUG" or "!DEBUG" in message.upper():
+			global debug_mode; debug_mode = True
+			print("Debug mode has been activated.")
+		elif "HELP" or "!HELP" in message.upper():
+			print(help_menu())
+			return("help mode has been sent")
+
 	def parse_reminder(message):
 		logging.info("In reminder")
 		# gets reminder details if "reminder" is found in feedback
@@ -41,6 +67,9 @@ def parse_data(message):
 			datetime_value = parse_datetime(message)
 		else:
 			datetime_value = get_date_tomorrow()
+		
+		datetime_value = datetime_value[0]
+
 		return(reminder_value, reminder_confidence, datetime_value)
 
 	def parse_datetime(data):
@@ -53,18 +82,43 @@ def parse_data(message):
 
 		return(datetime_value, datetime_confidence)
 
-	def parse_debug(data):
-		logging.info("in debug")
+	def parse_show_me(data):
+		import database_handler
+		# I dont know why I need this import statement, but code breaks otherwise
+		show_what_data = data["entities"]["show_me"][0]["entities"]["show_what"][0]["value"]
+		show_what_confi = data["entities"]["show_me"][0]["entities"]["show_what"][0]["confidence"]
+		if show_what_confi < 0.85:
+			print("here")
+			return("this failed")
+		else:
+			if "TODO" in show_what_data.upper():
+				database_handler.ToDo_view()
 
-	if "reminder" in data["entities"]:
-		todo_var = parse_reminder(data)
-		ToDo(todo_var)
+	if message.startswith("!"):
+		logging.info("in command")
+		parse_command(message)
+		return("this was a command")
+
+	elif "reminder" in data["entities"]:
+		logging.info("in reminder first part")
+		import database_handler
+		database_handler.ToDo_add(parse_reminder(data))
 		print("Your reminder has been set")
 		return("Your reminder has been set.")
+	elif "show_me" in data["entities"]:
+		parse_show_me(data)
 
 
+def help_menu():
+	message = """
+	Hello and welcome to the help menu.
+	This project was created by Brandon Skerritt in December 2017.
+	This project is under an MIT license.
+	"""
+	return message
 
 def get_date_tomorrow():
+	logging.info("in get date tomorrow")
 	# can modify so you can choose own time
 	from datetime import datetime, timedelta
 	import time
@@ -83,6 +137,7 @@ def get_date_tomorrow():
 	return(timestamp)
 
 def remove_pipi_msg(message):
+	logging.info("in remove_pipi message")
 	# removes "pipi" or "!pipi" from front of message so wit.ai can process it
 	if message.startswith("!pipi"):
 		return message[6:]
@@ -91,17 +146,9 @@ def remove_pipi_msg(message):
 
 #############################################################################################################
 # ToDo #
+"""
 def ToDo(reminder_tuple):
-	import database_handler
 
-	logging.info(reminder_tuple)
-
-	table_name = "todo"
-	db_handler = database_handler.Database_controller(table_name)
-
-	db_handler.cursor.execute("""CREATE TABLE IF NOT EXISTS
-		todo(id INTEGER PRIMARY KEY, task TEXT,
-		datetime TEXT, addedWhen TEXT)""")
 
 	reminder_value = reminder_tuple[0]
 	reminder_confidence = reminder_tuple[1]
@@ -113,5 +160,5 @@ def ToDo(reminder_tuple):
 
 	db_handler.db.commit()
 
-
+"""
 main()
