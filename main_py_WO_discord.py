@@ -24,19 +24,14 @@ client_wit = Wit(token_wit)
 
 logging.basicConfig(level=logging.INFO)
 
-debug_mode = False
 
-if debug_mode != True:
-	logging.disable(logging.CRITICAL) 
+# logging.disable(logging.CRITICAL) 
 
 def main():
 	while True:
-		try:
-			message = input("> ")
-			parse_data(message)
-		except Exception as e:
-			logging.info(e)
-			main()
+		message = input("> ")
+		parse_data(message)
+
 
 def parse_data(message):
 	# use signal for this. Consider developing your own interpretations?
@@ -49,7 +44,6 @@ def parse_data(message):
 		import database_handler
 		print(message)
 		if "DEBUG" or "!DEBUG" in message.upper():
-			global debug_mode; debug_mode = True
 			print("Debug mode has been activated.")
 		elif "HELP" or "!HELP" in message.upper():
 			print(help_menu())
@@ -61,15 +55,18 @@ def parse_data(message):
 		try:
 			reminder_value = data["entities"]["reminder"][0]["value"]
 			reminder_confidence = data["entities"]["reminder"][0]["confidence"]
+			logging.info(reminder_value)
+			logging.info(reminder_confidence)
 		except KeyError:
 			logging.debug("#164 dictionary does not contain right items")
 		if "datetime" in data["entities"]:
 			datetime_value = parse_datetime(message)
+			datetime_value = datetime_value[0]
 		else:
 			datetime_value = get_date_tomorrow()
+			logging.info("got tomorrows date")
 		
-		datetime_value = datetime_value[0]
-
+		logging.info("finished reminder")
 		return(reminder_value, reminder_confidence, datetime_value)
 
 	def parse_datetime(data):
@@ -88,10 +85,9 @@ def parse_data(message):
 		show_what_data = data["entities"]["show_me"][0]["entities"]["show_what"][0]["value"]
 		show_what_confi = data["entities"]["show_me"][0]["entities"]["show_what"][0]["confidence"]
 		if show_what_confi < 0.85:
-			print("here")
 			return("this failed")
 		else:
-			if "TODO" in show_what_data.upper():
+			if "TODO" or "REMINDER" in show_what_data.upper():
 				database_handler.ToDo_view()
 
 	if message.startswith("!"):
@@ -101,10 +97,18 @@ def parse_data(message):
 
 	elif "reminder" in data["entities"]:
 		logging.info("in reminder first part")
-		import database_handler
-		database_handler.ToDo_add(parse_reminder(data))
-		print("Your reminder has been set")
-		return("Your reminder has been set.")
+		todo_tuple = parse_reminder(data)
+		logging.info(todo_tuple)
+		if todo_tuple[1] == 0.00001:
+			logging.info("this is not a reminder")
+			return("this is not a reminder")
+		else:
+			import database_handler
+			database_handler.ToDo_create()
+			database_handler.ToDo_add(parse_reminder(data))
+			logging.info("yeah it worked")
+			print("Your reminder has been set")
+			return("Your reminder has been set.")
 	elif "show_me" in data["entities"]:
 		parse_show_me(data)
 
