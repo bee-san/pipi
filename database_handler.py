@@ -38,7 +38,7 @@ def ToDo_add(tuple):
 	task = tuple[0]
 	datetime1 = tuple[2]
 	db_handler = Database_controller("todo.db")
-	db_handler.cursor.execute("""INSERT INTO todo(task, datetime, addedWhen) VALUES (?, ?, ?)""", (task, datetime1, (datetime.now())))
+	db_handler.cursor.execute("""INSERT INTO todo(task, datetime, addedWhen) VALUES (?, ?, ?)""", (task, datetime1, (arrow.now())))
 	db_handler.db.commit()
 	return
 

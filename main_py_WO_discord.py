@@ -1,31 +1,27 @@
 # Built into Python
 import logging
 import datetime
+import sqlite3
 
 # External
 from wit import Wit
-
-# Internal modules
-import database_handler
+import arrow
 
 logging.basicConfig(filename='PiPiLog.txt', level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 
 # Getting API tokens
 with open("token.txt") as file:
 	file_read = file.readlines()
-	token_discord = file_read[0].split()
-	token_discord = token_discord[1]
-
 	token_wit = file_read[1].split()
-	token_wit = token_wit[1]
 
 # Setting up clients
-client_wit = Wit(token_wit)
+client_wit = Wit(token_wit[1])
 
 logging.basicConfig(level=logging.INFO)
 
 
 # logging.disable(logging.CRITICAL) 
+
 
 def main():
 	while True:
@@ -41,9 +37,9 @@ def parse_data(message):
 	def parse_command(message):
 		logging.info("in parse command")
 		logging.info(message)
-		import database_handler
 		print(message)
 		if "DEBUG" or "!DEBUG" in message.upper():
+			#TODO get debug to work
 			print("Debug mode has been activated.")
 		elif "HELP" or "!HELP" in message.upper():
 			print(help_menu())
@@ -80,15 +76,16 @@ def parse_data(message):
 		return(datetime_value, datetime_confidence)
 
 	def parse_show_me(data):
-		import database_handler
+		logging.info(data)
 		# I dont know why I need this import statement, but code breaks otherwise
 		show_what_data = data["entities"]["show_me"][0]["entities"]["show_what"][0]["value"]
 		show_what_confi = data["entities"]["show_me"][0]["entities"]["show_what"][0]["confidence"]
 		if show_what_confi < 0.85:
-			return("this failed")
+			return("Show me failed.")
 		else:
 			if "TODO" or "REMINDER" in show_what_data.upper():
-				database_handler.ToDo_view()
+				show = ToDo_view()
+		return show
 
 	if message.startswith("!"):
 		logging.info("in command")
@@ -99,18 +96,19 @@ def parse_data(message):
 		logging.info("in reminder first part")
 		todo_tuple = parse_reminder(data)
 		logging.info(todo_tuple)
-		if todo_tuple[1] == 0.00001:
+		if todo_tuple[1] < 0.85:
+			print("This is not a reminder.")
 			logging.info("this is not a reminder")
 			return("this is not a reminder")
 		else:
-			import database_handler
-			database_handler.ToDo_create()
-			database_handler.ToDo_add(parse_reminder(data))
+			ToDo_create()
+			ToDo_add(parse_reminder(data))
 			logging.info("yeah it worked")
 			print("Your reminder has been set")
 			return("Your reminder has been set.")
 	elif "show_me" in data["entities"]:
-		parse_show_me(data)
+		show_me = parse_show_me(data)
+		return show_me
 
 
 def help_menu():
@@ -150,19 +148,88 @@ def remove_pipi_msg(message):
 
 #############################################################################################################
 # ToDo #
-"""
-def ToDo(reminder_tuple):
+
+## ToDo Class and controller ###
+class Database_controller():
+	"""
+	Class which handles database stuff. Objects are instantiated with table names
+	so one object per table.
+
+	*Values*
+	self.cursor = SQLite cursor
+	self.db = SQLite db
+
+	"""
+	def __init__(self, table_name):
+		self.db = sqlite3.connect(table_name)
+		self.cursor = self.db.cursor()
+
+#####################################
+ToDo = Database_controller("todo.db")
+#########################
+
+def ToDo_create():
+	# uses database object defined at top of file. creates new table
+	ToDo.cursor.execute("""CREATE TABLE IF NOT EXISTS
+		todo(id INTEGER PRIMARY KEY, task TEXT,
+		datetime TEXT, addedWhen TEXT)""")
+	ToDo.db.commit()
+
+def ToDo_add(tuple):
+	# uses database object at top of file
+	# Adds new entry to todo table.
+	import time
+	from random import randint
+	task = tuple[0]
+	datetime1 = tuple[2]
+	logging.info("just about to add a new reminder")
+	ToDo.cursor.execute("""INSERT INTO todo(task, datetime, addedWhen) VALUES (?, ?, ?)""", (task, datetime1, (str(arrow.now()))))
+	ToDo.db.commit()
+	return
+
+def ToDo_get_age(age):
+	age_arrow = arrow.get(age)
+	return age_arrow.humanize()
+
+def ToDo_when_due(due):
+	present = arrow.utcnow()
+	due = arrow.get(due)
+	
+	return due.humanize(present)
 
 
-	reminder_value = reminder_tuple[0]
-	reminder_confidence = reminder_tuple[1]
-	reminder_Datetime = reminder_tuple[2]
+def ToDo_view():
+	# view the ToDo table
+	ToDo.cursor.execute("""SELECT * FROM todo""")
+	values = ToDo.cursor.fetchall()
 
-	database_handler.ToDo_add(reminder_value, reminder_Datetime, db_handler.cursor)
+	# gets a list of every single task
+	list_of_tasks = map(lambda x: x[1], values)
 
-	logging.info("task has been added to database")
+	# names is every single column name
+	names = [description[0] for description in ToDo.cursor.description]
 
-	db_handler.db.commit()
+	# gets a list of all tasks
+	longest_task = (len(max(list_of_tasks, key=len)) - 4)
+	spaces = (" " * (longest_task + 4))
+	# gets how many spaces the longest task is
+	string_top = ("id\ttask{}due\t\tage".format(spaces))
+	# 10 + spaces + 3 + 8
+	print(string_top)
+	# formarts it so the due column isn't direclty over the longest task
+	string_lines = ("-"*20) 
+	print(string_lines)
 
-"""
+	for i in values:
+		task_len = len(i[1])
+		# gets current task length
+		if not task_len == longest_task:
+			# if the current task is not the longest task
+			fill_length = len(spaces) - task_len + 4
+			# find out how much space is between task and "due" column, then print it with that much space
+		else:
+			fill_length = 4
+			# else just print it with a tab between them
+		print(str(i[0]) + "\t" + str(i[1]) + (fill_length * " ") + ToDo_when_due(i[2]) + "\t" + ToDo_get_age(i[3]))
+
 main()
