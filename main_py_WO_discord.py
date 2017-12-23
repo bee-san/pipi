@@ -2,6 +2,7 @@
 import logging
 import datetime
 import sqlite3
+import requests
 
 # External
 from wit import Wit
@@ -241,5 +242,21 @@ def ToDo_view():
 
 	return ("\n".join(return_list))
 		
+
+################################################################
+# GOOD MORNING
+###################################################
+
+def GoodMorning():
+	# weather
+	# top 3 HN links
+	# /r/hacking /r/python /r/bitcoin
+	# current crypto prices (use library)?
+	# any emails i've received
+	# my todo list
+	# an inspirational quote
+	
+	return("Hello")
+
 
 main()
