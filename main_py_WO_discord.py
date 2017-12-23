@@ -172,18 +172,16 @@ def ToDo_create():
 	# uses database object defined at top of file. creates new table
 	ToDo.cursor.execute("""CREATE TABLE IF NOT EXISTS
 		todo(id INTEGER PRIMARY KEY, task TEXT,
-		datetime TEXT, addedWhen TEXT)""")
+		datetime TEXT, addedWhen TEXT, done INTEGER)""")
 	ToDo.db.commit()
 
 def ToDo_add(tuple):
 	# uses database object at top of file
 	# Adds new entry to todo table.
-	import time
-	from random import randint
 	task = tuple[0]
 	datetime1 = tuple[2]
 	logging.info("just about to add a new reminder")
-	ToDo.cursor.execute("""INSERT INTO todo(task, datetime, addedWhen) VALUES (?, ?, ?)""", (task, datetime1, (str(arrow.now()))))
+	ToDo.cursor.execute("""INSERT INTO todo(task, datetime, addedWhen, done) VALUES (?, ?, ?, ?)""", (task, datetime1, (str(arrow.now())), 0))
 	ToDo.db.commit()
 	return
 
@@ -199,8 +197,10 @@ def ToDo_when_due(due):
 
 
 def ToDo_view():
+	return_list = []
+	# This will be what this function returns.
 	# view the ToDo table
-	ToDo.cursor.execute("""SELECT * FROM todo""")
+	ToDo.cursor.execute("""SELECT * FROM todo WHERE done = 0""")
 	values = ToDo.cursor.fetchall()
 
 	# gets a list of every single task
@@ -214,11 +214,13 @@ def ToDo_view():
 	spaces = (" " * (longest_task + 4))
 	# gets how many spaces the longest task is
 	string_top = ("id\ttask{}due\t\tage".format(spaces))
+	return_list.append(string_top)
 	# 10 + spaces + 3 + 8
 	print(string_top)
 	# formarts it so the due column isn't direclty over the longest task
 	string_lines = ("-"*20) 
 	print(string_lines)
+	return_list.append(string_lines)
 
 	for i in values:
 		task_len = len(i[1])
@@ -230,6 +232,14 @@ def ToDo_view():
 		else:
 			fill_length = 4
 			# else just print it with a tab between them
-		print(str(i[0]) + "\t" + str(i[1]) + (fill_length * " ") + ToDo_when_due(i[2]) + "\t" + ToDo_get_age(i[3]))
+		due = ToDo_when_due(i[2])
+		due_len = len(due)
+		space_age_due = (" " * (12 - due_len))
+		output = (str(i[0]) + "\t" + str(i[1]) + (fill_length * " ") + ToDo_when_due(i[2]) + space_age_due + ToDo_get_age(i[3]))
+		print(output)
+		return_list.append(output)
+
+	return ("\n".join(return_list))
+		
 
 main()
