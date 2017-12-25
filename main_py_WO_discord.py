@@ -3,10 +3,14 @@ import logging
 import datetime
 import sqlite3
 import requests
+import json
+import feedparser
+import praw
 
 # External
 from wit import Wit
 import arrow
+from hackernews import HackerNews # pip install haxor
 
 logging.basicConfig(filename='PiPiLog.txt', level=logging.DEBUG, format=' %(asctime)s - %(levelname)s- %(message)s')
 
@@ -14,11 +18,17 @@ logging.basicConfig(filename='PiPiLog.txt', level=logging.DEBUG, format=' %(asct
 with open("token.txt") as file:
 	file_read = file.readlines()
 	token_wit = file_read[1].split()
+	token_wit = token_wit[1]
+
+	weather_api = file_read[2].split()
+	token_weather = weather_api[1]
 
 # Setting up clients
-client_wit = Wit(token_wit[1])
+client_wit = Wit(token_wit)
 
 logging.basicConfig(level=logging.INFO)
+
+hn = HackerNews()
 
 
 # logging.disable(logging.CRITICAL) 
@@ -109,6 +119,8 @@ def parse_data(message):
 			return("Your reminder has been set.")
 	elif "show_me" in data["entities"]:
 		show_me = parse_show_me(data)
+		# REMOVE THIS 
+		print(show_me)
 		return show_me
 
 
@@ -237,7 +249,6 @@ def ToDo_view():
 		due_len = len(due)
 		space_age_due = (" " * (12 - due_len))
 		output = (str(i[0]) + "\t" + str(i[1]) + (fill_length * " ") + ToDo_when_due(i[2]) + space_age_due + ToDo_get_age(i[3]))
-		print(output)
 		return_list.append(output)
 
 	return ("\n".join(return_list))
@@ -247,7 +258,22 @@ def ToDo_view():
 # GOOD MORNING
 ###################################################
 
+def GetWeather():
+	# weather is default set to London
+	# TODO change
+	return requests.get('http://api.openweathermap.org/data/2.5/weather?q=London&APPID={}'.format(token_weather))
+
 def GoodMorning():
+	r = GetWeather()
+	weather_data = json.loads(r.text)
+	weather_description = weather_data["weather"][0]["description"]
+	weather_description = weather_description.capitalize()
+
+	# gets hacker news top articles and formats them nicely into a list called hn_top_stories
+	hn_top_stories = list(map(lambda i: (str(i).split("- ")[1][:-1]), list(map(lambda x: hn.get_item(x), hn.top_stories(limit=3)))))
+
+
+
 	# weather
 	# top 3 HN links
 	# /r/hacking /r/python /r/bitcoin
@@ -255,8 +281,9 @@ def GoodMorning():
 	# any emails i've received
 	# my todo list
 	# an inspirational quote
-	
+	# Google calandar integration?
 	return("Hello")
 
+GoodMorning()
 
 main()
