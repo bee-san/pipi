@@ -5,7 +5,6 @@ import sqlite3
 import requests
 import json
 import feedparser
-import praw
 
 # External
 from wit import Wit
@@ -22,6 +21,9 @@ with open("token.txt") as file:
 
 	weather_api = file_read[2].split()
 	token_weather = weather_api[1]
+
+	token_news = file_read[3].split()
+	token_news = token_news[1]
 
 # Setting up clients
 client_wit = Wit(token_wit)
@@ -229,10 +231,8 @@ def ToDo_view():
 	string_top = ("id\ttask{}due\t\tage".format(spaces))
 	return_list.append(string_top)
 	# 10 + spaces + 3 + 8
-	print(string_top)
 	# formarts it so the due column isn't direclty over the longest task
 	string_lines = ("-"*20) 
-	print(string_lines)
 	return_list.append(string_lines)
 
 	for i in values:
@@ -267,12 +267,56 @@ def GoodMorning():
 	r = GetWeather()
 	weather_data = json.loads(r.text)
 	weather_description = weather_data["weather"][0]["description"]
-	weather_description = weather_description.capitalize()
+	weather_description = weather_description
 
 	# gets hacker news top articles and formats them nicely into a list called hn_top_stories
 	hn_top_stories = list(map(lambda i: (str(i).split("- ")[1][:-1]), list(map(lambda x: hn.get_item(x), hn.top_stories(limit=3)))))
 
 
+	todo = ToDo_view()
+
+	# TODO change name
+
+	weather_description_list = weather_description.split(" ")
+
+	if "RAIN" in weather_description.upper() and "LIGHT" in weather_description.upper():
+		funny_weather_description = "I suggest you bring an umbrella today"
+	elif "SUNNY" in weather_description.upper():
+		funny_weather_description = "It's looking sunny today!"
+	elif "heavy" in weather_description:
+		funny_weather_description = "I suggest you wear wear a coat today!"
+	else:
+		funny_weather_description = "I hope today goes well for you."
+
+	bbc_news = requests.get("https://newsapi.org/v2/top-headlines?sources=bbc-news&apiKey={}".format(token_news))
+	bbc_news = bbc_news.json()
+
+	bbc_news_stories = []
+	for i in range(0, 3):
+		a = ("{}\n{}\n{}\n".format((bbc_news["articles"][i]["title"]), (bbc_news["articles"][i]["description"]), (bbc_news["articles"][i]["url"])))
+		bbc_news_stories.append(a)
+
+
+
+
+
+	return_message = """
+	\nHello, Brandon. Today's weather is {}. {}
+The top links on Hackernews are:
+1) {}
+2) {}
+3) {}
+
+The top stories on BBC news today are:
+1) {}
+2) {}
+3) {}
+
+Your todolist for today is \n{}
+
+	""".format(weather_description, funny_weather_description, hn_top_stories[0], hn_top_stories[1], hn_top_stories[2], bbc_news_stories[0], bbc_news_stories[1], bbc_news_stories[2], todo)
+
+	print(return_message)
 
 	# weather
 	# top 3 HN links
@@ -284,6 +328,10 @@ def GoodMorning():
 	# Google calandar integration?
 	return("Hello")
 
+# function that runs when it first comes alive
 GoodMorning()
 
-main()
+if __name__ == "__main__":
+	GoodMorning()
+	main()
+
